@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "76085900291",
+    "project_id": "anket-45f76",
+    "storage_bucket": "anket-45f76.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:76085900291:android:5db12fd507956c4e1e4a36",
+        "android_client_info": {
+          "package_name": "com.hesty.simple_survey_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "76085900291-tg558k0gjl3hj71m9jes4q29b4oesnot.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAapKXN5H-2lfIo23_-jCOHQbzWVSEKtO0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "76085900291-tg558k0gjl3hj71m9jes4q29b4oesnot.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
