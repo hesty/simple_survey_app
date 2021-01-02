@@ -1,110 +1,177 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  runApp(MyApp());
+final ThemeData kIOSTheme = new ThemeData(
+  primarySwatch: Colors.orange,
+  primaryColor: Colors.grey[100],
+  primaryColorBrightness: Brightness.light,
+);
+
+final ThemeData kDefaultTheme = new ThemeData(
+  primarySwatch: Colors.purple,
+  accentColor: Colors.orangeAccent[400],
+);
+
+const String _name = "Your Name";
+
+void main() {
+  runApp(new FriendlychatApp());
 }
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+class FriendlychatApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Survey',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: SurveyList(),
+    return new MaterialApp(
+      title: "Friendlychat",
+      theme: defaultTargetPlatform == TargetPlatform.iOS
+          ? kIOSTheme
+          : kDefaultTheme,
+      home: new ChatScreen(),
     );
   }
 }
 
-class SurveyList extends StatefulWidget {
-  @override
-  _SurveyListState createState() => _SurveyListState();
-}
+@override
+class ChatMessage extends StatelessWidget {
+  ChatMessage({this.text, this.animationController});
+  final String text;
+  final AnimationController animationController;
 
-class _SurveyListState extends State<SurveyList> {
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: Text("Simple Survey"),
-          centerTitle: true,
-        ),
-        body: StreamBuilder<QuerySnapshot>(
-          stream:
-              FirebaseFirestore.instance.collection("dilanketi").snapshots(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return Center(child: LinearProgressIndicator());
-            } else {
-             return buildBody(context, snapshot.data.docs);
-            }
-          },
-        )
-        //
-        );
-  }
-
-  buildBody(BuildContext context, List<DocumentSnapshot> snapshot) {
-    return ListView(
-      padding: EdgeInsets.only(top: 20),
-      children:
-          snapshot.map<Widget>((data) => buildListItem(context, data)).toList(),
-    );
-  }
-
-  buildListItem(BuildContext context, DocumentSnapshot data) {
-    final row = Survey.fromSnapshot(data);
-    return Padding(
-      key: ValueKey(row.isim),
-      padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Container(
-        decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
-            borderRadius: BorderRadius.circular(5.0)),
-        child: ListTile(
-          title: Text(row.isim),
-          trailing: Text(row.oy.toString()),
-          onTap: () {
-            FirebaseFirestore.instance.runTransaction((transaction) async{
-              final freshSnapshot = await transaction.get(row.reference);//Snapshot
-              final fresh = Survey.fromSnapshot(freshSnapshot);//Survey
-              
-              await transaction.update(row.reference, {"oy":fresh.oy+1});
-
-            });
-          },
+    return new SizeTransition(
+      sizeFactor: new CurvedAnimation(
+          parent: animationController, curve: Curves.easeOut),
+      axisAlignment: 0.0,
+      child: new Container(
+        margin: const EdgeInsets.symmetric(vertical: 10.0),
+        child: new Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            new Container(
+              margin: const EdgeInsets.only(right: 16.0),
+              child: new CircleAvatar(child: new Text(_name[0])),
+            ),
+            new Expanded(
+              child: new Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  new Text(_name, style: Theme.of(context).textTheme.subhead),
+                  new Container(
+                    margin: const EdgeInsets.only(top: 5.0),
+                    child: new Text(text),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-final fakeSnapshot = [
-  {"isim": "C#", "oy": 3},
-  {"isim": "Java", "oy": 6},
-  {"isim": "C++", "oy": 12},
-  {"isim": "Pyhthon", "oy": 44}
-];
+class ChatScreen extends StatefulWidget {
+  @override
+  State createState() => new ChatScreenState();
+}
 
-class Survey {
-  String isim;
-  int oy;
+class ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
+  final List<ChatMessage> _messages = <ChatMessage>[];
+  final TextEditingController _textController = new TextEditingController();
+  bool _isComposing = false;
 
-  DocumentReference reference;
+  @override
+  Widget build(BuildContext context) {
+    return new Scaffold(
+        appBar: new AppBar(
+          title: new Text("Friendlychat"),
+          elevation: Theme.of(context).platform == TargetPlatform.iOS ? 0.0 : 4.0,
+        ),
+        body: new Column(children: <Widget>[
+          new Flexible(
+              child: new ListView.builder(
+                padding: new EdgeInsets.all(8.0),
+                reverse: true,
+                itemBuilder: (_, int index) => _messages[index],
+                itemCount: _messages.length,
+              )),
+          new Divider(height: 1.0),
+          new Container(
+            decoration:
+            new BoxDecoration(color: Theme.of(context).cardColor),
+            child: _buildTextComposer(),
+          ),
+        ]));
+  }
 
-  Survey.fromMap(Map<String, dynamic> map, {this.reference})
-      : assert(map["isim"] != null),
-        assert(map["oy"] != null),
-        isim = map["isim"],
-        oy = map["oy"];
+  Widget _buildTextComposer() {
+    return new IconTheme(
+      data: new IconThemeData(color: Theme.of(context).accentColor),
+      child: new Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: new Row(children: <Widget>[
+            new Flexible(
+              child: new TextField(
+                controller: _textController,
+                onChanged: (String text) {
+                  setState(() {
+                    _isComposing = text.length > 0;
+                  });
+                },
+                onSubmitted: _isComposing
+                    ?_handleSubmitted
+                    :null,
+                decoration:
+                new InputDecoration.collapsed(hintText: "Send a message"),
+              ),
+            ),
+            new Container(
+                margin: new EdgeInsets.symmetric(horizontal: 4.0),
+                child: Theme.of(context).platform == TargetPlatform.iOS
+                    ? new CupertinoButton(
+                  child: new Text("Send"),
+                  onPressed: _isComposing
+                      ? () => _handleSubmitted(_textController.text)
+                      : null,
+                )
+                    : new IconButton(
+                  icon: new Icon(Icons.send),
+                  onPressed: _isComposing
+                      ? () => _handleSubmitted(_textController.text)
+                      : null,
+                )),
+          ]),
+          decoration: Theme.of(context).platform == TargetPlatform.iOS
+              ? new BoxDecoration(
+              border:
+              new Border(top: new BorderSide(color: Colors.grey[200])))
+              : null),
+    );
+  }
 
-  Survey.fromSnapshot(DocumentSnapshot snapshot)
-      : this.fromMap(snapshot.data(), reference: snapshot.reference);
+  void _handleSubmitted(String text) {
+    _textController.clear();
+    setState(() {
+      _isComposing = false;
+    });
+    ChatMessage message = new ChatMessage(
+      text: text,
+      animationController: new AnimationController(
+        duration: new Duration(milliseconds: 700),
+        vsync: this,
+      ),
+    );
+    setState(() {
+      _messages.insert(0, message);
+    });
+    message.animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    for (ChatMessage message in _messages)
+      message.animationController.dispose();
+    super.dispose();
+  }
 }
